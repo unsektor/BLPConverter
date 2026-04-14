@@ -48,6 +48,71 @@ Options:
   --miplevel, -m:  The specific mip level to convert (default: 0, the bigger one)
 ```
 
+## Usage with Docker
+
+1\. Build docker image
+
+```sh
+docker build --target blp-converter-debian -t blp-converter-debian .
+```
+
+> [!NOTE]
+> Typically, building `blp-converter-debian` image is required only once.
+> This image will contain only the built `BLPConverter` binary,
+> without build tools like `gcc` or `make`.
+> Compilation process itself occurs inside the `blp-converter-builder-debian` container.
+> Such design is used to get optimal image.
+
+> [!TIP]
+> When it's required to play with compilation interactively, such command may be used:
+>
+> ```sh
+> docker build --target blp-converter-builder-debian -t blp-converter-builder-debian .
+> docker run -it --rm --volume "$PWD:/src" --entrypoint '/bin/bash' blp-converter-builder-debian
+> # ... do something inside the container, for example `cmake /src`
+> ```
+
+2\. Run binary from container
+
+Synopsis:
+```
+docker run --rm -it blp-converter-debian [BLPConverter ARGUMENTS ...]
+```
+
+Print help:
+
+```sh
+docker run --rm -it blp-converter-debian  -h
+```
+
+> [!NOTE]
+> Container filesystem is isolated from host filesystem, to make host directories accessible from the container,
+> it's required to mount it on `docker run` command invocation, for example:
+>
+> ```sh
+> export BLP_DATA_DIR="/home/user/Documents/BLP"  # directory on host
+> export OUT_DATA_DIR="/home/user/Documents/BLPConverter-output"  # directory on host
+> 
+> docker run -it --rm \
+>   --volume "$BLP_DATA_DIR:/opt/data" \
+>   --volume "$OUT_DATA_DIR:/opt/data/out" \
+>   blp-converter-debian \
+>   --dest /opt/data/out/ /opt/data/*.BLP
+> 
+> cat "$OUT_DATA_DIR/list.txt"  # Print file on host (which created in container)
+> ```
+
+> [!TIP]
+> Like in example from previous step, when it's required to play with container (containing
+> the only `BLPConverter`) interactively, such command may be used:
+>
+> ```sh
+> docker run -it --rm --volume "$PWD:/opt/data" --entrypoint '/bin/bash' blp-converter-debian
+> # ... do something inside the container, for example `BLPConverter -h`
+> ```
+
+See [Usage](#usage) section for more usage examples.
+
 ## Extras
 
 The Python script 'extra/convert_all.py' can be used to convert recursively in-place
